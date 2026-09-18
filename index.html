@@ -318,9 +318,18 @@
   }
 
   function buildOptions(){
-    var others = shuffle(people.filter(function(p){
-      return p.id !== current.id && norm(p.names[0]) !== norm(current.names[0]);
-    })).slice(0, 2);
+    var pool = people.filter(function(p){ return p.id !== current.id; });
+    // prefer distractors whose name differs from the right answer
+    var distinct = pool.filter(function(p){
+      var n = norm(p.names[0]);
+      return n !== "" && n !== norm(current.names[0]);
+    });
+    var others = shuffle(distinct).slice(0, 2);
+    // if names are missing or all identical, top up so there are always 3 options
+    if(others.length < 2){
+      var rest = shuffle(pool.filter(function(p){ return others.indexOf(p) === -1; }));
+      others = others.concat(rest.slice(0, 2 - others.length));
+    }
     var choices = shuffle([current].concat(others));
 
     var box = $("opts");
