@@ -10,7 +10,7 @@
   :root{
     --bg:#f3f0ff; --card:#ffffff; --ink:#22203a; --muted:#6b6785;
     --brand:#5b3df5; --brand-2:#8f7bff; --ok:#12b76a; --bad:#f04438;
-    --sun:#ffb020; --shadow:0 10px 30px rgba(40,25,110,.13); --r:22px;
+    --shadow:0 10px 30px rgba(40,25,110,.13); --r:22px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
@@ -36,7 +36,7 @@
     box-shadow:0 6px 0 #4527d6; margin-bottom:14px; transition:transform .06s, box-shadow .06s;
   }
   .btn:active{transform:translateY(4px); box-shadow:0 2px 0 #4527d6}
-  .btn.ghost{background:#fff; color:var(--brand); box-shadow:0 0 0 2px #e3dcff inset; }
+  .btn.ghost{background:#fff; color:var(--brand); box-shadow:0 0 0 2px #e3dcff inset}
   .btn.ghost:active{transform:translateY(2px)}
   .btn.small{font-size:16px; padding:13px}
 
@@ -49,8 +49,8 @@
   .bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--brand-2),var(--brand)); width:0%; transition:width .35s}
 
   .photo{
-    width:100%; aspect-ratio:1/1; max-height:44svh; object-fit:cover;
-    border-radius:20px; background:#eee; display:block; margin:0 auto 18px;
+    width:100%; aspect-ratio:1/1; max-height:42svh; object-fit:cover;
+    border-radius:20px; background:#eee; display:block; margin:0 auto 16px;
     box-shadow:0 8px 22px rgba(40,25,110,.16);
   }
   .q{font-size:clamp(20px,5vw,26px); font-weight:800; margin:0 0 16px}
@@ -66,11 +66,22 @@
   .opt.wrong{background:#feecea; color:#912018; box-shadow:0 0 0 3px var(--bad) inset}
   .opt[disabled]{cursor:default}
 
-  .feedback{min-height:34px; margin-top:14px; font-size:clamp(19px,4.6vw,23px); font-weight:800}
+  /* answer card shown after every question */
+  .answer{margin-top:16px; padding:14px; border-radius:16px; background:#f6f3ff; display:none}
+  .answer.show{display:block}
+  .answer .ttl{
+    font-size:clamp(15px,3.8vw,18px); font-weight:700; color:#a15c00; background:#fff4e0;
+    display:inline-block; padding:4px 12px; border-radius:999px; margin-bottom:8px;
+  }
+  .answer .nm{font-size:clamp(24px,6.2vw,32px); font-weight:800; color:var(--brand); line-height:1.25}
+  .answer .alias{font-size:clamp(15px,3.8vw,17px); color:var(--muted); margin-top:4px}
+  .answer .pron{
+    font-size:clamp(17px,4.2vw,20px); font-weight:700; color:#0d7a55; margin-top:8px;
+    direction:ltr; letter-spacing:.4px;
+  }
+  .feedback{min-height:30px; margin-top:12px; font-size:clamp(18px,4.4vw,22px); font-weight:800}
   .feedback.ok{color:var(--ok)} .feedback.bad{color:var(--bad)}
 
-  .reveal{font-size:clamp(26px,7vw,36px); font-weight:800; color:var(--brand); margin:6px 0 16px; min-height:44px}
-  .hint{color:var(--muted); font-size:15px; margin:0 0 14px}
   .mic{
     width:104px;height:104px;border-radius:999px;border:0;cursor:pointer;font-size:42px;color:#fff;
     background:linear-gradient(180deg,var(--brand-2),var(--brand)); box-shadow:0 8px 0 #4527d6; margin:4px auto 16px; display:block;
@@ -84,24 +95,23 @@
   .big{font-size:clamp(46px,13vw,68px); margin:6px 0}
   .star{font-size:34px; letter-spacing:4px; margin-bottom:6px}
   .warn{background:#fff7e6;border:1px solid #ffd591;color:#8a5a00;border-radius:14px;padding:12px;font-size:14px;margin-bottom:16px;text-align:right;line-height:1.5}
+  .hint{color:var(--muted); font-size:15px; margin:0}
   .hidden{display:none !important}
-  @media (min-width:700px){ .card{padding:30px} .photo{max-height:48svh} }
+  @media (min-width:700px){ .card{padding:30px} }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <!-- ======= HOME ======= -->
   <section id="home" class="card">
     <h1>מי זה? 🎉</h1>
     <p class="sub">משחק היכרות עם המשפחה</p>
     <div id="setupWarn" class="warn hidden"></div>
     <button class="btn" data-mode="choose">👆 בחרו מתוך 3</button>
     <button class="btn" data-mode="say">🗣️ אמרו את השם</button>
-    <p id="loadInfo" class="hint">טוען תמונות…</p>
+    <p id="loadInfo" class="hint">טוען…</p>
   </section>
 
-  <!-- ======= GAME ======= -->
   <section id="game" class="card hidden">
     <div class="topbar">
       <button class="iconbtn" id="quit" aria-label="חזרה">✕</button>
@@ -112,18 +122,15 @@
 
     <img id="photo" class="photo" alt="תמונה של בן משפחה" />
 
-    <!-- choose mode -->
     <div id="chooseBox">
-      <p class="q">מי זה?</p>
+      <p class="q" id="qChoose">מי זה?</p>
       <div class="opts" id="opts"></div>
     </div>
 
-    <!-- say mode -->
     <div id="sayBox" class="hidden">
-      <p class="q">אתם יודעים מי זה?</p>
+      <p class="q" id="qSay">אתם יודעים מי זה?</p>
       <button id="mic" class="mic hidden" aria-label="דברו">🎤</button>
       <p id="heard" class="heard"></p>
-      <p id="reveal" class="reveal"></p>
       <button id="revealBtn" class="btn ghost">👀 גלו את התשובה</button>
       <div id="selfCheck" class="row2 hidden">
         <button class="btn" id="gotIt" style="margin:0">✅ ידעתי</button>
@@ -131,11 +138,17 @@
       </div>
     </div>
 
+    <div id="answer" class="answer">
+      <div class="ttl" id="ansTitle"></div>
+      <div class="nm" id="ansName"></div>
+      <div class="alias" id="ansAlias"></div>
+      <div class="pron" id="ansPron"></div>
+    </div>
+
     <p id="feedback" class="feedback"></p>
     <button id="next" class="btn hidden">הבא ➜</button>
   </section>
 
-  <!-- ======= END ======= -->
   <section id="end" class="card hidden">
     <div class="star" id="stars">⭐⭐⭐</div>
     <h1 id="endTitle">כל הכבוד!</h1>
@@ -151,12 +164,13 @@
 (function(){
   "use strict";
 
-  var IMG_DIR = "public/family/";
-  var CSV_URL = IMG_DIR + "index.csv";
+  var IMG_DIR     = "public/family/";
+  var PEOPLE_URL  = IMG_DIR + "people.csv";
+  var PHOTOS_URL  = IMG_DIR + "photos.csv";
+  var ROUND_SIZE  = 10;
 
-  var people = [];      // {id, names:[], img}
-  var deck = [], idx = 0, score = 0, mode = "choose", answered = false;
-  var current = null;
+  var byId = {}, people = [], photos = [];
+  var deck = [], idx = 0, score = 0, mode = "choose", answered = false, current = null;
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -177,20 +191,46 @@
     if(cell.length || row.length){ row.push(cell); rows.push(row); }
     return rows.filter(function(r){ return r.some(function(v){ return v.trim() !== ""; }); });
   }
+  function headerRows(txt, firstCol){
+    var rows = parseCSV(txt);
+    if(rows.length && new RegExp(firstCol, "i").test((rows[0][0] || "").trim())) rows.shift();
+    return rows;
+  }
+  var cut = function(s){ return (s || "").trim(); };
 
   function loadData(){
-    return fetch(CSV_URL, {cache:"no-store"}).then(function(r){
-      if(!r.ok) throw new Error("csv " + r.status);
-      return r.text();
-    }).then(function(txt){
-      var rows = parseCSV(txt);
-      if(rows.length && /id/i.test(rows[0][0] || "")) rows.shift();
-      people = rows.map(function(r){
-        var id = (r[0] || "").trim();
-        var names = r.slice(1).map(function(s){ return (s || "").trim(); })
-                             .filter(function(s){ return s !== ""; });
-        return { id:id, names:names, img: IMG_DIR + "face-" + id + ".jpg" };
-      }).filter(function(p){ return p.id && p.names.length; });
+    return Promise.all([
+      fetch(PEOPLE_URL, {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error("people"); return r.text(); }),
+      fetch(PHOTOS_URL, {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error("photos"); return r.text(); })
+    ]).then(function(res){
+      // people.csv : id, formal, title, nicknames(;), pronunciation, gender
+      headerRows(res[0], "id").forEach(function(r){
+        var id = cut(r[0]);
+        if(!id) return;
+        var p = {
+          id: id,
+          formal: cut(r[1]),
+          // a person can hold more than one title (אמא to her own kids, דודה to the rest)
+          titles: cut(r[2]).split(";").map(cut).filter(Boolean),
+          aliases: cut(r[3]).split(";").map(cut).filter(Boolean),
+          pron: cut(r[4]),
+          female: /^(f|female|נ|נקבה)$/i.test(cut(r[5]))
+        };
+        if(!p.formal) return;
+        // everything that counts as a correct spoken answer
+        p.allNames = [p.formal].concat(p.aliases);
+        p.titles.forEach(function(t){
+          p.allNames.push(t);                  // "דודה"
+          p.allNames.push(t + " " + p.formal); // "דודה יעל"
+        });
+        byId[id] = p;
+        people.push(p);
+      });
+      // photos.csv : file, person id
+      headerRows(res[1], "file").forEach(function(r){
+        var f = cut(r[0]), pid = cut(r[1]);
+        if(f && byId[pid]) photos.push({ img: IMG_DIR + f, person: byId[pid] });
+      });
     });
   }
 
@@ -203,11 +243,11 @@
     return a;
   }
   function norm(s){
-    return (s || "").replace(/[֑-ׇ]/g, "")   // niqqud / cantillation
+    return (s || "").replace(/[֑-ׇ]/g, "")
                     .replace(/[^א-תa-zA-Z0-9]/g, "")
                     .toLowerCase();
   }
-  function looksBroken(p){ return p.names.every(function(n){ return /^[?\s]+$/.test(n); }); }
+  var demo = function(p){ return p.female ? "זאת" : "זה"; };
 
   /* ---------- sound ---------- */
   var actx = null;
@@ -229,7 +269,6 @@
   var sBad  = function(){ beep([300, 200], .16); };
   var sWin  = function(){ beep([660, 880, 1180, 1480], .14); };
 
-  /* ---------- screens ---------- */
   function show(which){
     ["home","game","end"].forEach(function(s){ $(s).classList.toggle("hidden", s !== which); });
     window.scrollTo(0, 0);
@@ -251,7 +290,7 @@
         $("heard").textContent = "שמעתי: " + said[0];
         var hit = said.some(function(t){
           var n = norm(t);
-          return current.names.some(function(name){
+          return current.person.allNames.some(function(name){
             var nn = norm(name);
             return nn && (n === nn || n.indexOf(nn) !== -1 || nn.indexOf(n) !== -1);
           });
@@ -276,27 +315,36 @@
   }
 
   /* ---------- round ---------- */
+  function buildDeck(){
+    // prefer one photo per person, then top up if the round is still short
+    var pool = shuffle(photos), seen = {}, first = [], rest = [];
+    pool.forEach(function(ph){
+      if(seen[ph.person.id]) rest.push(ph);
+      else { seen[ph.person.id] = 1; first.push(ph); }
+    });
+    return first.concat(rest).slice(0, Math.min(ROUND_SIZE, photos.length));
+  }
+
   function start(m){
-    mode = m;
-    deck = shuffle(people);
-    idx = 0; score = 0;
-    show("game");
-    render();
+    mode = m; deck = buildDeck(); idx = 0; score = 0;
+    show("game"); render();
   }
 
   function render(){
     answered = false;
     current = deck[idx];
+    var p = current.person;
 
     $("progress").textContent = (idx + 1) + " / " + deck.length;
     $("score").textContent = "⭐ " + score;
     $("barFill").style.width = (idx / deck.length * 100) + "%";
     $("feedback").textContent = ""; $("feedback").className = "feedback";
+    $("answer").classList.remove("show");
     $("next").classList.add("hidden");
+    $("photo").src = current.img;
 
-    var img = $("photo");
-    img.src = current.img;
-    img.alt = "תמונה של בן משפחה";
+    $("qChoose").textContent = "מי " + demo(p) + "?";
+    $("qSay").textContent = "אתם יודעים מי " + demo(p) + "?";
 
     if(mode === "choose"){
       $("chooseBox").classList.remove("hidden");
@@ -305,7 +353,6 @@
     } else {
       $("chooseBox").classList.add("hidden");
       $("sayBox").classList.remove("hidden");
-      $("reveal").textContent = "";
       $("heard").textContent = "";
       $("revealBtn").classList.remove("hidden");
       $("selfCheck").classList.add("hidden");
@@ -313,32 +360,29 @@
       stopMic();
     }
 
-    // preload next image
     if(deck[idx+1]){ var pre = new Image(); pre.src = deck[idx+1].img; }
   }
 
   function buildOptions(){
-    var pool = people.filter(function(p){ return p.id !== current.id; });
-    // prefer distractors whose name differs from the right answer
-    var distinct = pool.filter(function(p){
-      var n = norm(p.names[0]);
-      return n !== "" && n !== norm(current.names[0]);
+    var me = current.person;
+    var pool = people.filter(function(p){
+      return p.id !== me.id && norm(p.formal) !== norm(me.formal);
     });
-    var others = shuffle(distinct).slice(0, 2);
-    // if names are missing or all identical, top up so there are always 3 options
+    var others = shuffle(pool).slice(0, 2);
     if(others.length < 2){
-      var rest = shuffle(pool.filter(function(p){ return others.indexOf(p) === -1; }));
+      var rest = shuffle(people.filter(function(p){
+        return p.id !== me.id && others.indexOf(p) === -1;
+      }));
       others = others.concat(rest.slice(0, 2 - others.length));
     }
-    var choices = shuffle([current].concat(others));
+    var choices = shuffle([me].concat(others));
 
     var box = $("opts");
     box.innerHTML = "";
     choices.forEach(function(p){
       var b = document.createElement("button");
-      b.className = "opt";
-      b.type = "button";
-      b.textContent = p.names[0];
+      b.className = "opt"; b.type = "button";
+      b.textContent = p.formal;
       b.onclick = function(){ pick(b, p, choices); };
       box.appendChild(b);
     });
@@ -347,10 +391,10 @@
   function pick(btn, p, choices){
     if(answered) return;
     answered = true;
-    var right = (p.id === current.id);
+    var right = (p.id === current.person.id);
     Array.prototype.forEach.call($("opts").children, function(el, i){
       el.disabled = true;
-      if(choices[i].id === current.id) el.classList.add("correct");
+      if(choices[i].id === current.person.id) el.classList.add("correct");
     });
     if(!right) btn.classList.add("wrong");
     finish(right);
@@ -360,22 +404,37 @@
     if(answered) return;
     answered = true;
     stopMic();
-    $("reveal").textContent = current.names.join(" · ");
     $("revealBtn").classList.add("hidden");
     $("selfCheck").classList.add("hidden");
     finish(right);
   }
 
+  function showAnswerCard(){
+    var p = current.person;
+    $("ansTitle").textContent = p.titles.join(" · ");
+    $("ansTitle").style.display = p.titles.length ? "inline-block" : "none";
+    $("ansName").textContent = p.formal;
+    $("ansAlias").textContent = p.aliases.length ? p.aliases.join(" · ") : "";
+    $("ansPron").textContent = p.pron || "";
+    $("answer").classList.add("show");
+  }
+
   function finish(right){
-    if(right){ score++; sGood(); }
-    else sBad();
+    var p = current.person;
+    if(right){ score++; sGood(); } else sBad();
     $("score").textContent = "⭐ " + score;
-    var f = $("feedback");
-    var yay = ["מעולה! 🎉","כל הכבוד! 👏","נכון מאוד! ⭐","יופי! 🌟"];
+
+    showAnswerCard();
+
+    var yay  = ["מעולה! 🎉","כל הכבוד! 👏","נכון מאוד! ⭐","יופי! 🌟"];
     var nope = ["כמעט! 💪","לא נורא, ממשיכים! 🙂","בפעם הבאה! 🌈"];
-    f.textContent = right ? yay[Math.floor(Math.random()*yay.length)]
-                          : nope[Math.floor(Math.random()*nope.length)] + " זה " + current.names[0];
+    var f = $("feedback");
+    var full = (p.titles.length ? p.titles[0] + " " : "") + p.formal;
+    f.textContent = right
+      ? yay[Math.floor(Math.random()*yay.length)]
+      : nope[Math.floor(Math.random()*nope.length)] + " " + demo(p) + " " + full;
     f.className = "feedback " + (right ? "ok" : "bad");
+
     $("next").classList.remove("hidden");
     $("next").textContent = (idx + 1 < deck.length) ? "הבא ➜" : "לסיום ➜";
   }
@@ -410,38 +469,40 @@
   $("revealBtn").addEventListener("click", function(){
     if(answered) return;
     stopMic();
-    $("reveal").textContent = current.names.join(" · ");
+    showAnswerCard();
     $("revealBtn").classList.add("hidden");
     $("selfCheck").classList.remove("hidden");
   });
-  $("gotIt").addEventListener("click", function(){ answered = false; judgeSay(true); });
-  $("missedIt").addEventListener("click", function(){ answered = false; judgeSay(false); });
+  $("gotIt").addEventListener("click", function(){ judgeSay(true); });
+  $("missedIt").addEventListener("click", function(){ judgeSay(false); });
 
   /* ---------- boot ---------- */
-  loadData().then(function(){
-    var btns = document.querySelectorAll("[data-mode]");
-    if(people.length < 3){
-      $("loadInfo").textContent = "צריך לפחות 3 תמונות כדי לשחק.";
-      Array.prototype.forEach.call(btns, function(b){ b.disabled = true; b.style.opacity = .5; });
-      return;
-    }
-    $("loadInfo").textContent = people.length + " בני משפחה במשחק";
+  function disable(msg){
+    $("loadInfo").textContent = msg;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-mode]"), function(b){
+      b.disabled = true; b.style.opacity = .5;
+    });
+  }
 
-    var broken = people.filter(looksBroken).length;
+  loadData().then(function(){
+    if(people.length < 3) return disable("צריך לפחות 3 אנשים ברשימה כדי לשחק.");
+    if(photos.length < 1) return disable("אין תמונות ברשימה עדיין.");
+
+    $("loadInfo").textContent = photos.length + " תמונות · " + people.length + " בני משפחה" +
+      (photos.length > ROUND_SIZE ? " · " + ROUND_SIZE + " תמונות בכל סיבוב" : "");
+
+    var broken = people.filter(function(p){ return /^[?\s]+$/.test(p.formal); }).length;
     if(broken){
       var w = $("setupWarn");
       w.classList.remove("hidden");
-      w.innerHTML = "⚠️ <b>" + broken + " מתוך " + people.length +
-        "</b> השמות בקובץ <code>index.csv</code> אינם קריאים (מופיעים כ־???).<br>" +
-        "שמרו את הקובץ מאקסל בתור <b>CSV UTF-8</b> והעלו אותו מחדש.";
+      w.innerHTML = "⚠️ <b>" + broken + "</b> מהשמות בקובץ <code>people.csv</code> אינם קריאים. " +
+                    "שמרו את הקובץ בתור <b>CSV UTF-8</b> והעלו מחדש.";
     }
-    if(!speechOK){
-      $("loadInfo").textContent += " · במכשיר הזה מצב הדיבור יעבוד ללא מיקרופון";
-    }
-    // warm the first few images
-    shuffle(people).slice(0,3).forEach(function(p){ var i = new Image(); i.src = p.img; });
-  }).catch(function(){
-    $("loadInfo").textContent = "לא הצלחתי לטעון את רשימת השמות (index.csv).";
+    if(!speechOK) $("loadInfo").textContent += " · מצב הדיבור כאן יעבוד ללא מיקרופון";
+
+    shuffle(photos).slice(0, 3).forEach(function(ph){ var i = new Image(); i.src = ph.img; });
+  }).catch(function(e){
+    disable("לא הצלחתי לטעון את הנתונים (people.csv / photos.csv).");
   });
 
 })();
