@@ -227,7 +227,7 @@
       fetch(PEOPLE_URL, {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error("people"); return r.text(); }),
       fetch(PHOTOS_URL, {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error("photos"); return r.text(); })
     ]).then(function(res){
-      // people.csv : id, formal, title(;), nicknames(;), pronunciation, gender
+      // people.csv : id, formal, title(;), nicknames(;), pronunciation, gender, spellings(;)
       headerRows(res[0], "id").forEach(function(r){
         var id = cut(r[0]);
         if(!id) return;
@@ -237,16 +237,29 @@
           titles: cut(r[2]).split(";").map(cut).filter(Boolean),
           aliases: cut(r[3]).split(";").map(cut).filter(Boolean),
           pron: cut(r[4]),
-          female: /^(f|female|נ|נקבה)$/i.test(cut(r[5]))
+          female: /^(f|female|נ|נקבה)$/i.test(cut(r[5])),
+          // alternative spellings of the same name (עדו / עידו).
+          // accepted when spoken, never shown on screen.
+          spellings: cut(r[6]).split(";").map(cut).filter(Boolean)
         };
         if(!p.formal) return;
-        p.allNames = [p.formal].concat(p.aliases);
-        p.titles.forEach(function(t){
-          p.allNames.push(t);
-          p.allNames.push(t + " " + p.formal);
-        });
+        p.allNames = [p.formal].concat(p.aliases).concat(p.spellings);
         byId[id] = p;
         people.push(p);
+      });
+
+      // how many people hold each title? "סבא" is unique, "אבא" is not
+      var titleCount = {};
+      people.forEach(function(p){
+        p.titles.forEach(function(t){ titleCount[norm(t)] = (titleCount[norm(t)] || 0) + 1; });
+      });
+      people.forEach(function(p){
+        p.titles.forEach(function(t){
+          p.allNames.push(t + " " + p.formal);          // "דודה יעל" always counts
+          // a bare title counts only when it can mean one person, otherwise
+          // "אבא" would be a correct answer for every father in the family
+          if(titleCount[norm(t)] === 1) p.allNames.push(t);
+        });
       });
       // photos.csv : file, person id
       headerRows(res[1], "file").forEach(function(r){
@@ -265,9 +278,14 @@
     return a;
   }
   function norm(s){
-    return (s || "").replace(/[֑-ׇ]/g, "")
-                    .replace(/[^א-תa-zA-Z0-9]/g, "")
-                    .toLowerCase();
+    return (s || "")
+      .replace(/[֑-ׇ]/g, "")             // niqqud
+      .replace(/[^א-תa-zA-Z0-9]/g, "")   // punctuation, spaces
+      // Hebrew final letters -> regular, so a name at the end of a sentence still matches
+      .replace(/ך/g,"כ").replace(/ם/g,"מ").replace(/ן/g,"נ").replace(/ף/g,"פ").replace(/ץ/g,"צ")
+      // doubled yod/vav are a spelling choice, not a different name (איימי = אימי)
+      .replace(/יי+/g,"י").replace(/וו+/g,"ו")
+      .toLowerCase();
   }
   var demo = function(p){ return p.female ? "זאת" : "זה"; };
 
@@ -314,7 +332,9 @@
           var n = norm(t);
           return current.person.allNames.some(function(name){
             var nn = norm(name);
-            return nn && (n === nn || n.indexOf(nn) !== -1 || nn.indexOf(n) !== -1);
+            // the sentence may wrap the name ("זה עידו"), but a fragment of a
+            // name is not enough - otherwise "אבא" would match "אבא עדו"
+            return nn && (n === nn || n.indexOf(nn) !== -1);
           });
         });
         if(hit) judge(true);
