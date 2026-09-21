@@ -6,89 +6,100 @@ A Hebrew face-recognition game for kids, built from family photos.
 
 ---
 
-## Status (last updated 19 Sep 2026)
+## Status (21 Sep 2026)
 
 | Item | State |
 |---|---|
-| Game (`index.html`) | ✅ Built, deployed, tested live in both modes |
-| 10 face crops | ✅ In `public/family/` |
-| `public/family/index.csv` | ⚠️ **Names are broken** — every name cell contains `???` |
-| GitHub Pages | ✅ Enabled, `main` / root |
-| Repo visibility | Public (needed for free Pages) |
-
-### ⚠️ The one open task
-
-`index.csv` was saved from Excel in a non-Unicode encoding, so the Hebrew names were
-destroyed and stored as literal `?` characters. Until it is fixed, every answer button
-in the game reads `???`.
-
-**Fix:** in Excel use *Save As → CSV UTF-8 (Comma delimited) (.csv)*, then re-upload the
-file to `public/family/`. The orange warning on the game's home screen disappears
-automatically once the names load correctly.
+| Game (`index.html`) | ✅ Live and tested |
+| People | 18, all with photos |
+| Photos | 168 face crops in `public/family/` |
+| Round length | 15 photos |
+| GitHub Pages | ✅ `main` / root |
+| Repo visibility | Public (required for free Pages) |
 
 ---
 
-## How it works
+## Data files
 
-`index.html` is a single self-contained file — no build step, no dependencies, no CDN.
-On load it fetches `public/family/index.csv` and builds the deck from it at runtime.
+Both live in `public/family/` and are read at runtime — **no code changes are needed
+to add people or photos.** Save them as **CSV UTF-8**, never plain "CSV", or Hebrew is destroyed.
 
-### CSV format
+### `people.csv`
 
 ```
-ID,name,second name
-001,שם,שם שני
-002,שם,
+id,formal,title,nicknames,pronunciation,gender,spellings
+p02,עדו,אבא;דוד,,Iddo,m,עידו
+p14,גלעד,סבא,פדרה;סבוש,Gilad,m,
 ```
 
-- `ID` maps to the image: ID `001` → `public/family/face-001.jpg`
-- Any column after `ID` is treated as another valid name for that person
-- A person is included only if they have an ID and at least one name
-- Minimum 3 people required to play (needed for 3 answer options)
+| column | meaning |
+|---|---|
+| `id` | key referenced by `photos.csv` |
+| `formal` | the name shown on buttons and on the answer card |
+| `title` | `;`-separated. A person can hold several (אמא to her own children, דודה to the rest) |
+| `nicknames` | `;`-separated. Shown on the answer card **and** accepted when spoken |
+| `pronunciation` | Latin spelling, shown after answering so a child learns how it sounds |
+| `gender` | `m` / `f` — drives מי זה vs מי זאת and the feedback wording |
+| `spellings` | `;`-separated alternative spellings. **Accepted when spoken, never displayed.** For ktiv male/haser pairs like עדו / עידו |
 
-### Adding more photos later
+### `photos.csv`
 
-1. Crop the face, square, save as `public/family/face-011.jpg`
-2. Add a row `011,שם,` to `public/family/index.csv`
+```
+file,person
+gilad-01.jpg,p14
+```
 
-That's it — no code changes. The round length grows automatically.
+One row per photo. A person may have any number.
 
-Existing crops are 600×600 JPEG, quality 90, face centred with padding for hair.
+### Adding more
+
+1. Crop the face square, save as `public/family/<name>-NN.jpg`
+2. Add a row to `photos.csv`
 
 ---
 
-## Game design (as agreed)
+## Game design
 
-- **Language:** Hebrew, RTL throughout
-- **Devices:** phone, tablet, desktop — single screen, no scrolling to answer
-- **Mode 1 — בחרו מתוך 3:** photo + three name buttons. Distractors are other people
-  whose name differs from the answer; if names are missing or identical it tops up from
-  the rest of the pool so there are always exactly 3 options.
-- **Mode 2 — אמרו את השם:** adapts to the device.
-  - Browsers with the Web Speech API (Chrome, Edge, Android) show a mic button and
-    check the spoken Hebrew name.
-  - Safari / iPhone / iPad have no such API, so the mic is hidden and the child taps
-    *גלו את התשובה* then *ידעתי / לא ידעתי*.
-- **Multiple names:** any of a person's names counts as correct. Buttons show the first name.
-- **Round:** all photos, shuffled, once each. Score, progress bar, stars, play again.
+- **Hebrew, RTL**, single screen on phone / tablet / desktop
+- **One round = 15 photos**, shuffled, preferring a different person for each before repeating anyone
+- **Per-question choice.** Each question opens with the photo, מי זה? / מי זאת?, and the
+  microphone. The three name buttons are *hidden* behind a quiet
+  *לא יודעים? הראו לי 3 אפשרויות* link, so a reading child can't just read the answer.
+  A correct answer scores a full ⭐ either way.
+- **No microphone (iPhone/iPad):** step 1 shows 🗣️ אמרתי את השם instead, which reveals
+  the name and asks ידעתי / לא ידעתי.
+- **Microphone test on the home screen** — also gets the browser permission prompt out of
+  the way before the first question.
+- **Answer card** after every question: title badge, formal name, nicknames, English pronunciation.
 - Sounds are generated with the Web Audio API — no audio files.
 
+### Speech matching rules
+
+- Accepted: formal name, any nickname, any alternative spelling, and `title + name` ("דודה יעל")
+- A **bare title** counts only when it identifies one person — סבא and סבתא do,
+  but אבא / אמא / דוד / דודה do not, otherwise "אבא" would be correct for every father
+- The sentence may wrap the name ("זה עידו"), but a fragment of a name is not enough
+- Doubled yod/vav collapse (איימי = אימי) and final letters normalise.
+  Deliberately **not** stripping all yods/vavs — that would make אור and אייר identical.
+- A wrong spoken answer does not end the question; the child can retry or open the options
+
 ---
 
-## Notes / decisions
+## Notes
 
-- The repo was made **public** deliberately, so GitHub Pages works on a free account.
-  This means the ten family face photos are reachable by anyone with the URL.
-  `<meta name="robots" content="noindex, nofollow">` keeps them out of search results,
-  but it is not privacy. To close this off: make the repo private again (Pages stops
-  working) or move hosting elsewhere.
-- Face crops were produced with OpenCV Haar cascades (frontal + profile). Two needed
-  manual framing: the b&w boy in profile (no detection) and the bonnet close-up
-  (detector picked the wrong region).
-- `public/family/.gitkeep` is the placeholder that created the empty folder. It can be
-  deleted now that the folder has real files.
+- The repo is **public** so Pages works on a free account, which means the face photos are
+  reachable by anyone with the URL. `noindex` keeps them out of search results, but that is
+  not privacy. To close it: make the repo private (Pages stops) or host elsewhere.
+- Crops are 600×600 JPEG q90. Produced with OpenCV Haar cascades using a
+  multi-detector vote (a real face is usually found by 2+ detectors; false positives by one).
+  Babies defeat the detector often — roughly a third of photos needed a manual box,
+  and **every crop was checked visually before upload**.
+- HEIC files from iPhone are converted automatically; send them as-is.
+- Filenames may carry a position hint when a photo has several people —
+  `left`, `right`, `top`, `most left`, `second from left`, `center`. These are parsed
+  and used to pick the correct face. **Please keep doing this.**
 
 ## Also in this account
 
-`raduil-trip-2026` — separate repo, the Bulgaria trip site, live at
+`raduil-trip-2026` — the Bulgaria trip site, live at
 https://giladtzori-alt.github.io/raduil-trip-2026/
